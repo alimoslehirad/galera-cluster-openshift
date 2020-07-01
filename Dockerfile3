@@ -1,0 +1,35 @@
+FROM centos:centos7
+USER root
+MAINTAINER adfinis-sygroup.ch <info@adfinis-sygroup.ch>
+LABEL io.k8s.description="MariaDB is a multi-user, multi-threaded SQL database server" \
+      io.k8s.display-name="MariaDB 10.1" \
+      io.openshift.expose-services="3306:mysql" \
+      io.openshift.tags="database,mysql,mariadb10,rh-mariadb10"
+EXPOSE 3306/tcp
+RUN yum install git -y
+Run cd /opt && \
+    git clone https://github.com/adfinis-sygroup/openshift-mariadb-galera.git
+
+RUN echo "[mariadb]" > /etc/yum.repos.d/mariadb.repo && \
+    echo "name = MariaDB" >> /etc/yum.repos.d/mariadb.repo && \
+    echo "baseurl = http://yum.mariadb.org/10.4/centos7-amd64" >> /etc/yum.repos.d/mariadb.repo && \
+    echo "gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB" >> /etc/yum.repos.d/mariadb.repo && \
+    echo "gpgcheck=1" >> /etc/yum.repos.d/mariadb.repo
+RUN yum makecache --disablerepo='*' --enablerepo='mariadb' && \
+    yum install -y \
+      MariaDB-client \
+      MariaDB-server \
+      rsync \
+      policycoreutils-python && \
+    yum clean all
+RUN echo '!include /etc/config/my_extra.cnf' >> /etc/my.cnf
+RUN echo 'innodb_log_file_size = 50331648 ' >> /etc/my.cnf
+RUN cat /etc/my.cnf
+RUN cp -r /opt/openshift-mariadb-galera/k8s-mariadb-galera-centos/root/etc /
+RUN cp -r /opt/openshift-mariadb-galera/k8s-mariadb-galera-centos/root/usr /
+RUN /usr/libexec/container-setup.sh
+VOLUME ["/var/lib/mysql"]
+RUN chown -R 1001:1001 /etc/my.cnf.d
+RUN chmod 777 /etc/my.cnf.d
+USER 1001
+ENTRYPOINT ["/usr/bin/container-entrypoint.sh"]

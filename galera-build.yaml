@@ -1,0 +1,85 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewBuild
+  creationTimestamp: '2020-06-30T15:50:02Z'
+  labels:
+    build: galera
+  name: galera
+  namespace: galera-mysql
+  resourceVersion: '404085'
+  selfLink: /apis/build.openshift.io/v1/namespaces/galera-mysql/buildconfigs/galera
+  uid: 5c64c5b4-bae9-11ea-b166-525400f0d68e
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'galera:latest'
+  postCommit: {}
+  resources:
+    limits:
+      cpu: '1'
+      memory: 1Gi
+  runPolicy: Serial
+  source:
+    dockerfile: >-
+      FROM centos:centos7
+
+      USER root
+
+      MAINTAINER adfinis-sygroup.ch <info@adfinis-sygroup.ch>
+
+      LABEL io.k8s.description="MariaDB is a multi-user, multi-threaded SQL
+      database server" \
+            io.k8s.display-name="MariaDB 10.1" \
+            io.openshift.expose-services="3306:mysql" \
+            io.openshift.tags="database,mysql,mariadb10,rh-mariadb10"
+      EXPOSE 3306/tcp
+
+      RUN yum install git -y
+
+      Run cd /opt && \
+          git clone https://github.com/adfinis-sygroup/openshift-mariadb-galera.git
+      RUN rpm --import https://yum.mariadb.org/RPM-GPG-KEY-MariaDB && \
+          yum install -y \
+            epel-release && \
+          yum install -y \
+            MariaDB-client \
+            MariaDB-server \
+            galera \
+            which \
+            socat \
+            percona-xtrabackup \
+            bind-utils \
+            policycoreutils && \
+          yum clean all
+      RUN echo '!include /etc/config/my_extra.cnf' >> /etc/my.cnf
+
+      RUN cp -r /opt/openshift-mariadb-galera/k8s-mariadb-galera-centos/root/etc
+      /
+
+      RUN cp -r /opt/openshift-mariadb-galera/k8s-mariadb-galera-centos/root/usr
+      /
+
+      RUN /usr/libexec/container-setup.sh
+
+      VOLUME ["/var/lib/mysql"]
+
+      RUN chown -R 1001:1001 /etc/my.cnf.d
+
+      RUN chmod 777 /etc/my.cnf.d
+
+      USER 1001
+
+      ENTRYPOINT ["/usr/bin/container-entrypoint.sh"]
+    type: Dockerfile
+  strategy:
+    dockerStrategy: {}
+    type: Docker
+  successfulBuildsHistoryLimit: 5
+  triggers: []
+status:
+  lastVersion: 11
