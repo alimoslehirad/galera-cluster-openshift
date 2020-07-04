@@ -24,14 +24,14 @@ else
 	cp ${CONTAINER_SCRIPTS_DIR}/galera.cnf ${EXTRA_DEFAULTS_FILE}
 	/usr/bin/peer-finder -on-start="${CONTAINER_SCRIPTS_DIR}/configure-galera.sh" -service=${K8S_SVC_NAME}
 fi
-#
-#
-# # We assume that mysql needs to be setup if this directory is not present
-# if [ ! -d "/var/lib/mysql/mysql" ]; then
-# 	echo "Configure first time mysql"
-# 	${CONTAINER_SCRIPTS_DIR}/configure-mysql.sh
-# fi
-#
-#
-# # Run mysqld
-# exec mysqld
+
+
+# We assume that mysql needs to be setup if this directory is not present
+if [ ! -d "/var/lib/mysql/mysql" ]; then
+	echo "Configure first time mysql"
+	${CONTAINER_SCRIPTS_DIR}/configure-mysql.sh
+fi
+
+
+# Run mysqld
+exec mysqld
