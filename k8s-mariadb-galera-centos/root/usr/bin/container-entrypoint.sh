@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Toman group
+# Adfinis SyGroup AG
 # openshift-mariadb-galera: Container entrypoint
 #
 

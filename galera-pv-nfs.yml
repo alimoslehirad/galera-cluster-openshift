@@ -2,21 +2,20 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
     name: datadir-mysql-0
-    namespace: galera-mysql
 spec:
   accessModes:
     - ReadWriteOnce
   capacity:
     storage: 2Gi
   nfs:
+    path:
     path: /data/datadir-mysql-0
-    server: 192.168.43.200
+    server: 10.10.10.10
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
     name: datadir-mysql-1
-    namespace: galera-mysql
 spec:
   accessModes:
     - ReadWriteOnce
@@ -24,13 +23,12 @@ spec:
     storage: 2Gi
   nfs:
     path: /data/datadir-mysql-1
-    server: 192.168.43.201
+    server: 10.10.10.10
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
     name: datadir-mysql-2
-    namespace: galera-mysql
 spec:
   accessModes:
     - ReadWriteOnce
@@ -38,4 +36,4 @@ spec:
     storage: 2Gi
   nfs:
     path: /data/datadir-mysql-2
-    server: 192.168.43.202   
+    server: 10.10.10.10

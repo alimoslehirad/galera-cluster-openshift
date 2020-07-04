@@ -1,5 +1,4 @@
 FROM centos:centos7
-USER root
 MAINTAINER adfinis-sygroup.ch <info@adfinis-sygroup.ch>
 LABEL io.k8s.description="MariaDB is a multi-user, multi-threaded SQL database server" \
       io.k8s.display-name="MariaDB 10.1" \
@@ -28,5 +27,5 @@ COPY root /
 RUN /usr/libexec/container-setup.sh
 
 VOLUME ["/var/lib/mysql"]
-USER 1001
+USER 27:27
 ENTRYPOINT ["/usr/bin/container-entrypoint.sh"]
