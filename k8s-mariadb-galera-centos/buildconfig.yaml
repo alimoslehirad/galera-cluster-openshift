@@ -1,0 +1,79 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewBuild
+  labels:
+    build: galera-mysql
+  name: galera-mysql
+  namespace: galera-mysql
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'galera-mysql:latest'
+  postCommit: {}
+  resources:
+    limits:
+      cpu: '1'
+      memory: 1Gi
+  runPolicy: Serial
+  source:
+    dockerfile: >-
+      FROM centos:centos7
+      USER root
+      MAINTAINER adfinis-sygroup.ch <info@adfinis-sygroup.ch>
+      LABEL io.k8s.description="MariaDB is a multi-user, multi-threaded SQL database server" \
+            io.k8s.display-name="MariaDB 10.1" \
+            io.openshift.expose-services="3306:mysql" \
+            io.openshift.tags="database,mysql,mariadb10,rh-mariadb10"
+      EXPOSE 3306/tcp
+      RUN yum install git -y
+      RUN cd /opt && \
+      git clone https://github.com/alimoslehirad/galera-cluster-openshift.git && \
+      cp -r galera-cluster-openshift/root/etc/yum.repos.d/mariadb.repo /etc/yum.repos.d/ && \
+      cp -r galera-cluster-openshift/root/etc / && \
+      cp -r galera-cluster-openshift/root/usr / && \
+      RUN rpm --import https://yum.mariadb.org/RPM-GPG-KEY-MariaDB && \
+          yum install -y \
+            epel-release && \
+          yum install -y \
+            MariaDB-client \
+            MariaDB-server \
+            galera \
+            which \
+            socat \
+            percona-xtrabackup \
+            bind-utils \
+            policycoreutils && \
+          yum clean all
+      RUN echo '!include /etc/config/my_extra.cnf' >> /etc/my.cnf
+      
+      RUN /usr/libexec/container-setup.sh
+      
+      VOLUME ["/var/lib/mysql"]
+      USER 1002
+      NTRYPOINT ["/usr/bin/container-entrypoint.sh"]
+    type: Dockerfile
+  strategy:
+    dockerStrategy:
+      from:
+        kind: ImageStreamTag
+        name: 'python:3.6'
+        namespace: openshift
+    type: Docker
+  successfulBuildsHistoryLimit: 5
+  triggers:
+    - imageChange:
+        lastTriggeredImageID: >-
+          docker-registry.default.svc:5000/openshift/python@sha256:d5a2022b4ce5ebc9f5d4874ac50dd702b78cf543ff5bda6438cc9171a28b86bc
+      type: ImageChange
+    - type: ConfigChange
+    - github:
+        secret: 7SIWpwxZ0uhAkN8J87b_
+      type: GitHub
+    - generic:
+        secret: YWkw7paJqIUECiIsWEx5
+      type: Generic

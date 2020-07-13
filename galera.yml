@@ -4,64 +4,94 @@ metadata:
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   name: galera
+  namespace: galera-mysql
   labels:
-    app: mysql
+    app: galera-mysql
 spec:
   ports:
   - port: 3306
     name: mysql
   clusterIP: None
   selector:
-    app: mysql
+    app: galera-mysql
 ---
-apiVersion: apps/v1alpha1
-kind: PetSet
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
-  name: mysql
+  generation: 1
+  labels:
+    app: galera-mysql
+  name: galera-mysql
+  namespace: galera-mysql
 spec:
-  serviceName: "galera"
+  podManagementPolicy: OrderedReady
   replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: galera-mysql
+  serviceName: galera-mysql
   template:
     metadata:
+      creationTimestamp: null
       labels:
-        app: mysql
-      annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
+        app: galera-mysql
     spec:
       containers:
-      - name: mysql
-        image: adfinissygroup/k8s-mariadb-galera-centos:v004
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 3306
+        - env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          image: '172.30.1.1:5000/galera-mysql/galera-mysql:latest'
+          imagePullPolicy: Always
           name: mysql
-        - containerPort: 4444
-          name: sst
-        - containerPort: 4567
-          name: replication
-        - containerPort: 4568
-          name: ist
-        readinessProbe:
-          exec:
-            command:
-            - /usr/share/container-scripts/mysql/readiness-probe.sh
-          initialDelaySeconds: 15
-          timeoutSeconds: 5
-        volumeMounts:
-        - name: datadir
-          mountPath: /var/lib/mysql
-          subPath: data
-        env:
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
+          ports:
+            - containerPort: 3306
+              name: mysql
+              protocol: TCP
+            - containerPort: 4444
+              name: sst
+              protocol: TCP
+            - containerPort: 4567
+              name: replication
+              protocol: TCP
+            - containerPort: 4568
+              name: ist
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - /usr/share/container-scripts/mysql/readiness-probe.sh
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: datadir
+              subPath: data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
   volumeClaimTemplates:
-  - metadata:
-      name: datadir
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 2Gi
+    - metadata:
+        creationTimestamp: null
+        name: datadir
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi
